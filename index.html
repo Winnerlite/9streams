@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>9Streams | Lightning-Fast Movie Browser</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #01b4e4;
+      --primary-dark: #032541;
+      --secondary: #90cea1;
+      --dark-bg: #0f1a2a;
+      --card-bg: #1a2a3a;
+      --text-light: #f8f9fa;
+      --text-muted: #adb5bd;
+      --accent: #ff6b6b;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--dark-bg);
+      margin: 0;
+      padding: 20px;
+      color: var(--text-light);
+      min-height: 100vh;
+    }
+    
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    h1 i {
+      color: #ffd700;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-weight: 300;
+      font-size: 1.1rem;
+    }
+    
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px auto;
+      flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.85rem;
+    }
+    
+    .tab-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary) 100%);
+      box-shadow: 0 0 15px rgba(1, 180, 228, 0.4);
+    }
+    
+    .search-container {
+      max-width: 600px;
+      margin: 30px auto;
+      position: relative;
+    }
+    
+    .search-bar {
+      display: flex;
+      border-radius: 50px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    .search-bar:focus-within {
+      box-shadow: 0 10px 30px rgba(1, 180, 228, 0.4);
+    }
+    
+    #searchInput {
+      flex: 1;
+      padding: 15px 25px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: var(--text-light);
+      font-size: 1rem;
+      outline: none;
+    }
+    
+    #searchInput::placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    
+    #searchBtn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border: none;
+      padding: 0 30px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    #searchBtn:hover {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+    }
+    
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 25px;
+      margin-top: 40px;
+    }
+    
+    .movie-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .movie-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      border-color: rgba(1, 180, 228, 0.3);
+    }
+    
+    .movie-poster-container {
+      width: 100%;
+      height: 330px;
+      position: relative;
+      background: linear-gradient(135deg, #1a2a3a 0%, #0f1a2a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .loading-spinner {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .movie-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.3s ease;
+    }
+    
+    .movie-card.loading img {
+      opacity: 0;
+    }
+    
+    .movie-card.loaded img {
+      opacity: 1;
+    }
+    
+    .movie-info {
+      padding: 15px;
+    }
+    
+    .movie-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      height: 2.8em;
+    }
+    
+    .movie-rating {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: #ffd700;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+    
+    .watch-btn {
+      margin: 0 auto 15px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-block;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .watch-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(1, 180, 228, 0.3);
+    }
+    
+    .upcoming-badge {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 40px 0;
+    }
+    
+    .pagination button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pagination button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(1, 180, 228, 0.3);
+    }
+    
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .upcoming-note {
+      text-align: center;
+      margin: 30px auto;
+      padding: 15px;
+      background: rgba(255, 107, 107, 0.1);
+      color: var(--accent);
+      border-radius: 8px;
+      max-width: 600px;
+      border-left: 4px solid var(--accent);
+      font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+      .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+      }
+      
+      .movie-poster-container {
+        height: 225px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .tab-btn, #searchBtn, .pagination button {
+        padding: 10px 18px;
+      }
+      
+      #searchInput {
+        padding: 12px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1><i class="fas fa-bolt"></i> 9Streams</h1>
+  <p class="subtitle">Binge-watch like a pro with lightning-fast streaming</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-type="popular">🔥 Popular</button>
+    <button class="tab-btn" data-type="top_rated">⭐ Top Rated</button>
+    <button class="tab-btn" data-type="upcoming">🚀 Coming Soon</button>
+  </div>
+
+  <div class="search-container">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Spill the tea... what movie you tryna watch?" />
+      <button id="searchBtn"><i class="fas fa-search"></i> Search</button>
+    </div>
+  </div>
+
+  <div id="movieGrid" class="movie-grid"></div>
+  
+  <div class="pagination">
+    <button id="prevPage"><i class="fas fa-arrow-left"></i> Prev</button>
+    <button id="nextPage">Next <i class="fas fa-arrow-right"></i></button>
+  </div>
+
+  <div id="upcomingNote" class="upcoming-note" style="display: none;">
+    <i class="fas fa-calendar-alt"></i> Coming soon to a screen near you! Stay tuned for these fire releases...
+  </div>
+
+  <script>
+    const API_KEY = 'c9ae6d71a995e7c08499bd3a5c891052';
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+
+    const movieGrid = document.getElementById('movieGrid');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const upcomingNote = document.getElementById('upcomingNote');
+
+    let currentPage = 1;
+    let currentType = 'popular';
+    let currentQuery = '';
+    let isSearchMode = false;
+    let totalPages = 1;
+
+    function buildEndpoint() {
+      if (isSearchMode && currentQuery) {
+        return `/search/movie?query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+      } else {
+        return `/movie/${currentType}?page=${currentPage}`;
+      }
+    }
+
+    async function fetchMovies() {
+      movieGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px;"><div class="loading-spinner"></div></div>';
+      upcomingNote.style.display = (currentType === 'upcoming' && !isSearchMode) ? 'block' : 'none';
+
+      try {
+        const endpoint = buildEndpoint();
+        const res = await fetch(`${BASE_URL}${endpoint}&api_key=${API_KEY}`);
+        const data = await res.json();
+        totalPages = data.total_pages || 1;
+        displayMovies(data.results || []);
+        updatePagination();
+      } catch (err) {
+        movieGrid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--accent); padding:40px;">Yikes! Failed to load movies. Try again?</p>';
+      }
+    }
+
+    function displayMovies(movies) {
+      movieGrid.innerHTML = '';
+      
+      if (!movies || movies.length === 0) {
+        movieGrid.innerHTML = `
+          <div style="grid-column:1/-1; text-align:center; padding:40px;">
+            <i class="fas fa-film" style="font-size:3rem; color:var(--text-muted); margin-bottom:20px;"></i>
+            <p>No movies found. Try another search?</p>
+          </div>
+        `;
+        return;
+      }
+      
+      movies.forEach(movie => {
+        if (!movie.poster_path) return;
+        
+        const card = document.createElement('div');
+        card.className = 'movie-card loading';
+        
+        const posterContainer = document.createElement('div');
+        posterContainer.className = 'movie-poster-container';
+        posterContainer.innerHTML = '<div class="loading-spinner"></div>';
+        
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.alt = movie.title;
+        img.src = `${IMAGE_URL}${movie.poster_path}`;
+        img.onload = () => {
+          card.classList.remove('loading');
+          card.classList.add('loaded');
+        };
+        
+        posterContainer.appendChild(img);
+        
+        let buttonMarkup = '';
+        
+        if (currentType === 'upcoming' && !isSearchMode) {
+          buttonMarkup = `<div class="upcoming-badge">Coming Soon</div>`;
+        } else {
+          buttonMarkup = `
+            <div class="movie-rating">
+              <i class="fas fa-star"></i>
+              ${movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
+            </div>
+            <a href="movie.html?id=${movie.id}" class="watch-btn">
+              <i class="fas fa-play"></i> Watch Now
+            </a>
+          `;
+        }
+        
+        card.innerHTML = `
+          ${posterContainer.outerHTML}
+          <div class="movie-info">
+            <div class="movie-title">${movie.title}</div>
+            ${buttonMarkup}
+          </div>
+        `;
+        
+        movieGrid.appendChild(card);
+      });
+    }
+
+    function updatePagination() {
+      prevPageBtn.disabled = currentPage <= 1;
+      nextPageBtn.disabled = currentPage >= totalPages;
+    }
+
+    // Tab switching
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentType = btn.dataset.type;
+        isSearchMode = false;
+        currentPage = 1;
+        searchInput.value = '';
+        fetchMovies();
+      });
+    });
+
+    // Search handler
+    searchBtn.addEventListener('click', () => {
+      const query = searchInput.value.trim();
+      if (query) {
+        currentQuery = query;
+        isSearchMode = true;
+        currentPage = 1;
+        tabButtons.forEach(b => b.classList.remove('active'));
+        fetchMovies();
+      }
+    });
+
+    // Enter key for search
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') searchBtn.click();
+    });
+
+    // Pagination
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        fetchMovies();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        fetchMovies();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    // Initial load
+    fetchMovies();
+  </script>
+
+</body>
+</html>
